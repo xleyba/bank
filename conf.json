@@ -1,0 +1,4 @@
+{
+  "port": ":9296",
+  "calledserviceurl": "http://localhost:9096"
+}
