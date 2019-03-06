@@ -127,6 +127,7 @@ func main() {
 	log.Println("Starting server")
 
 	// Start to read conf file
+	log.Println("bank v0.5")
 	log.Println("=============================================")
 	log.Println("         Configuration checking")
 	log.Println("=============================================")
