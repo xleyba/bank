@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"html"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"io/ioutil"
 )
 
 // Configuration
@@ -25,33 +25,51 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 }
 
-
-// Return default message for root routing
+// Handle iterative path and calls iterative calculation service
 func echoHandler(calledServiceURL string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		params := mux.Vars(r)
 
 		url := calledServiceURL + "/echo/" + params["message"]
 
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Fatal(err)
-			fmt.Fprintf(w, "%s", err)
+		tr := &http.Transport{
+			//MaxIdleConns:       500,
+			//MaxIdleConnsPerHost:  500,
+		}
+
+		netClient := &http.Client{Transport: tr}
+
+		req, reqErr := http.NewRequest("GET", url, nil)
+		if reqErr != nil {
+			log.Fatal("Error en response: ", reqErr)
+			fmt.Fprintf(w, "Error en response: %s", reqErr)
 			return
 		}
 
+		req.Header.Set("Connection", "close")
+		//req.Header.Set("Connection", "Keep-Alive")
+		//req.Close = true
+
+
+		//resp, err := netClient.Get(url)
+		resp, err := netClient.Do(req)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Error en response: ", err)
+			fmt.Fprintf(w, "Error en response: %s", err)
+			return
 		}
 
-		robots, err := ioutil.ReadAll(resp.Body)
+		respData, errResp := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
+		if errResp != nil {
+			log.Fatal("Error en RespData", errResp)
+			fmt.Fprintf(w, "Error en respData: %s", err)
+			return
 		}
 
+		fmt.Fprintf(w, "%s", respData)
 
-		fmt.Fprintf(w, "%s", robots)
 	}
 }
 
@@ -63,7 +81,24 @@ func factorialIterativeHandler(calledServiceURL string) func(w http.ResponseWrit
 
 		url := calledServiceURL + "/factorialIterative/" + params["number"]
 
-		resp, err := http.Get(url)
+		tr := &http.Transport{
+			//MaxIdleConns:       500,
+			//MaxIdleConnsPerHost:  500,
+		}
+
+		netClient := &http.Client{Transport: tr}
+
+		req, reqErr := http.NewRequest("GET", url, nil)
+		if reqErr != nil {
+			log.Fatal("Error en response: ", reqErr)
+			fmt.Fprintf(w, "Error en response: %s", reqErr)
+			return
+		}
+
+		req.Header.Set("Connection", "close")
+
+		//resp, err := http.Get(url)
+		resp, err := netClient.Do(req)
 		if err != nil {
 			log.Fatal(err)
 			fmt.Fprintf(w, "%s", err)
@@ -74,14 +109,15 @@ func factorialIterativeHandler(calledServiceURL string) func(w http.ResponseWrit
 			log.Fatal(err)
 		}
 
-		robots, err := ioutil.ReadAll(resp.Body)
+		respData, errResp := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
+		if errResp != nil {
+			log.Fatal(errResp)
+			fmt.Fprintf(w, "Error en respData: %s", err)
+			return
 		}
 
-
-		fmt.Fprintf(w, "%s", robots)
+		fmt.Fprintf(w, "%s", respData)
 
 	}
 }
@@ -94,7 +130,24 @@ func factorialRecursiveHandler(calledServiceURL string) func(w http.ResponseWrit
 
 		url := calledServiceURL + "/factorialRecursive/" + params["number"]
 
-		resp, err := http.Get(url)
+		tr := &http.Transport{
+			//MaxIdleConns:       500,
+			//MaxIdleConnsPerHost:  500,
+		}
+
+		netClient := &http.Client{Transport: tr}
+
+		req, reqErr := http.NewRequest("GET", url, nil)
+		if reqErr != nil {
+			log.Fatal("Error en response: ", reqErr)
+			fmt.Fprintf(w, "Error en response: %s", reqErr)
+			return
+		}
+
+		req.Header.Set("Connection", "close")
+
+		//resp, err := http.Get(url)
+		resp, err := netClient.Do(req)
 		if err != nil {
 			log.Fatal(err)
 			fmt.Fprintf(w, "%s", err)
@@ -105,14 +158,15 @@ func factorialRecursiveHandler(calledServiceURL string) func(w http.ResponseWrit
 			log.Fatal(err)
 		}
 
-		robots, err := ioutil.ReadAll(resp.Body)
+		respData, errResp := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		if err != nil {
-			log.Fatal(err)
+		if errResp != nil {
+			log.Fatal(errResp)
+			fmt.Fprintf(w, "Error en respData: %s", err)
+			return
 		}
 
-
-		fmt.Fprintf(w, "%s", robots)
+		fmt.Fprintf(w, "%s", respData)
 
 	}
 }
@@ -127,9 +181,9 @@ func main() {
 	log.Println("Starting server")
 
 	// Start to read conf file
-	log.Println("bank v0.5")
+	log.Println("\n\n")
 	log.Println("=============================================")
-	log.Println("         Configuration checking")
+	log.Println("      Configuration checking - bank v0.6")
 	log.Println("=============================================")
 	file, err := os.Open("conf.json")
 
