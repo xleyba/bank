@@ -17,8 +17,6 @@ type Configuration struct {
 	CalledServiceURL string
 }
 
-var port string
-var calledServiceURL string
 
 // Return default message for root routing
 func Index(w http.ResponseWriter, r *http.Request) {
