@@ -9,6 +9,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
+	"flag"
+	"os/signal"
+	"context"
 )
 
 // Configuration
@@ -45,9 +49,8 @@ func echoHandler(calledServiceURL string) func(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		req.Header.Set("Connection", "close")
+		//req.Header.Set("Connection", "close")
 		//req.Header.Set("Connection", "Keep-Alive")
-		//req.Close = true
 
 
 		//resp, err := netClient.Get(url)
@@ -88,30 +91,26 @@ func factorialIterativeHandler(calledServiceURL string) func(w http.ResponseWrit
 
 		req, reqErr := http.NewRequest("GET", url, nil)
 		if reqErr != nil {
-			log.Fatal("Error en response: ", reqErr)
-			fmt.Fprintf(w, "Error en response: %s", reqErr)
+			log.Fatal("Error en request: ", reqErr)
+			fmt.Fprintf(w, "Error en request: %s", reqErr)
 			return
 		}
 
 		req.Header.Set("Connection", "close")
 
 		//resp, err := http.Get(url)
-		resp, err := netClient.Do(req)
-		if err != nil {
-			log.Fatal(err)
-			fmt.Fprintf(w, "%s", err)
+		resp, errResp := netClient.Do(req)
+		if errResp != nil {
+			log.Fatal("Error en response: ", errResp)
+			fmt.Fprintf(w, "Error en response: %s", errResp)
 			return
 		}
 
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		respData, errResp := ioutil.ReadAll(resp.Body)
+		respData, errRespData := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
-		if errResp != nil {
-			log.Fatal(errResp)
-			fmt.Fprintf(w, "Error en respData: %s", err)
+		if errRespData != nil {
+			log.Fatal(errRespData)
+			fmt.Fprintf(w, "Error en respData: %s", errRespData)
 			return
 		}
 
@@ -172,6 +171,11 @@ func factorialRecursiveHandler(calledServiceURL string) func(w http.ResponseWrit
 // Main function
 func main() {
 
+	// Used for server graceful shutdown
+	var wait time.Duration
+	flag.DurationVar(&wait, "graceful-timeout", time.Second * 15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
+	flag.Parse()
+
 	// Set default values
 	port := ":9296"
 	calledServiceURL := "http://localhost:9596"
@@ -181,7 +185,7 @@ func main() {
 	// Start to read conf file
 	log.Println("\n\n")
 	log.Println("=============================================")
-	log.Println("      Configuration checking - bank v0.6")
+	log.Println("      Configuration checking - bank v0.7")
 	log.Println("=============================================")
 	file, err := os.Open("conf.json")
 
@@ -220,13 +224,58 @@ func main() {
 
 	log.Println("=============================================")
 
+
 	router := mux.NewRouter() //.StrictSlash(true)
+
 	router.HandleFunc("/", Index).Methods("GET")
 	router.HandleFunc("/echo/{message}", echoHandler(calledServiceURL)).Methods("GET")
 	router.HandleFunc("/factorialIterative/{number}", factorialIterativeHandler(calledServiceURL)).Methods("GET")
 	router.HandleFunc("/factorialRecursive/{number}", factorialRecursiveHandler(calledServiceURL)).Methods("GET")
 
-	log.Println("Running server....")
+	// set timeout
+	muxWithMiddlewares := http.TimeoutHandler(router, time.Second*3, "Timeout!")
 
-	log.Fatal(http.ListenAndServe(port, router))
+	srv := &http.Server{
+		Addr:         port,
+		// Good practice to set timeouts to avoid Slowloris attacks.
+		// Using just the read parameter due to this article
+		// https://stackoverflow.com/questions/29334407/creating-an-idle-timeout-in-go
+		//WriteTimeout: time.Second * 60,
+		ReadTimeout:  time.Second * 15,
+		//IdleTimeout:  time.Second * 120,
+		//Handler: router, // Pass our instance of gorilla/mux in.
+		Handler: muxWithMiddlewares,
+	}
+
+	// Run our server in a goroutine so that it doesn't block.
+	go func() {
+		log.Println("Running server....")
+
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	// Optionally, you could run srv.Shutdown in a goroutine and block on
+	// <-ctx.Done() if your application should wait for other services
+	// to finalize based on context cancellation.
+	fmt.Println("\n\n")
+	log.Println("shutting down")
+	log.Println("Goddbye!....")
+	os.Exit(0)
+
 }
