@@ -11,5 +11,5 @@ windows:
 
 # Clean all old files
 clean:
-	rm -f calculator
+	rm -f bank
 	rm -f *.exe
