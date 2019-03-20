@@ -48,6 +48,8 @@ func start() {
 	switch viper.GetString("loglevel") {
 	case "info":
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	case "disabled":
