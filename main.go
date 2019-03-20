@@ -41,7 +41,7 @@ func start() {
 		panic(err)
 	}
 
-	fmt.Println("-- Using port:       ", viper.GetString("port"))
+	fmt.Println("-- Using port:              ", viper.GetString("port"))
 
 	zerolog.TimeFieldFormat = time.RFC3339
 	zerolog.TimestampFieldName = "@timestamp"
