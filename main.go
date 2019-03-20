@@ -1,228 +1,130 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/gorilla/mux"
-	"html"
-	"io/ioutil"
-	"log"
-	"net/http"
+	"github.com/buaazp/fasthttprouter"
+	"github.com/gojektech/heimdall/hystrix"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
+	"github.com/valyala/fasthttp"
 	"os"
 	"os/signal"
 	"time"
-	"github.com/spf13/viper"
 )
 
-
-// Return default message for root routing
-func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+type MyHandler struct {
+	calledServiceURL string
+	client *hystrix.Client
 }
 
-// Handle iterative path and calls iterative calculation service
-func echoHandler(calledServiceURL string, netClient *http.Client) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+// Display start messages
+func start() {
 
-		params := mux.Vars(r)
+	fmt.Println("Starting server")
 
-		url := calledServiceURL + "/echo/" + params["message"]
+	// Start to read conf file
+	fmt.Print("\n\n")
+	fmt.Println("=============================================")
+	fmt.Println("    Configuration checking - bank v1.0")
+	fmt.Println("=============================================")
 
-		req, reqErr := http.NewRequest("GET", url, nil)
-		if reqErr != nil {
-			log.Fatal("Error en response: ", reqErr)
-			fmt.Fprintf(w, "Error en response: %s", reqErr)
-			return
-		}
-
-		req.Header.Set("Connection", "close")
-		//req.Header.Set("Connection", "Keep-Alive")
-
-		resp, err := netClient.Do(req)
-		if err != nil {
-			log.Fatal("Error en response: ", err)
-			fmt.Fprintf(w, "Error en response: %s", err)
-			return
-		}
-
-		respData, errResp := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		if errResp != nil {
-			log.Fatal("Error en RespData", errResp)
-			fmt.Fprintf(w, "Error en respData: %s", err)
-			return
-		}
-
-		fmt.Fprintf(w, "%s", respData)
-
+	// loading configuration
+	viper.SetConfigName("conf")          // name of config file (without ext)
+	viper.AddConfigPath(".")             // default path for conf file
+	viper.SetDefault("port", ":9296")    // default port value
+	viper.SetDefault("calledServiceURL", "http://localhost:9596") // default calledServiceURL
+	viper.SetDefault("loglevel", "info") // default port value
+	err := viper.ReadInConfig()          // Find and read the config file
+	if err != nil {                      // Handle errors reading the config file
+		fmt.Printf("Fatal error config file: %v \n", err)
+		panic(err)
 	}
-}
 
-// Handle iterative path and calls iterative calculation service
-func factorialIterativeHandler(calledServiceURL string, netClient *http.Client) func(w http.ResponseWriter,
-	r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("-- Using port:       ", viper.GetString("port"))
 
-		params := mux.Vars(r)
-
-		url := calledServiceURL + "/factorialIterative/" + params["number"]
-
-		req, reqErr := http.NewRequest("GET", url, nil)
-		if reqErr != nil {
-			log.Fatal("Error en request: ", reqErr)
-			fmt.Fprintf(w, "Error en request: %s", reqErr)
-			return
-		}
-
-		req.Header.Set("Connection", "close")
-		//req.Header.Set("Connection", "Keep-Alive")
-
-		resp, errResp := netClient.Do(req)
-		if errResp != nil {
-			log.Fatal("Error en response: ", errResp)
-			fmt.Fprintf(w, "Error en response: %s", errResp)
-			return
-		}
-
-		respData, errRespData := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		if errRespData != nil {
-			log.Fatal(errRespData)
-			fmt.Fprintf(w, "Error en respData: %s", errRespData)
-			return
-		}
-
-		fmt.Fprintf(w, "%s", respData)
-
+	zerolog.TimeFieldFormat = time.RFC3339
+	zerolog.TimestampFieldName = "@timestamp"
+	switch viper.GetString("loglevel") {
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "disabled":
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+	default:
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-}
 
-// Handle recursive path and calls recursive calculation service
-func factorialRecursiveHandler(calledServiceURL string, netClient *http.Client) func(w http.ResponseWriter,
-	r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("-- Log lever set to:        ", viper.GetString("loglevel"))
+	fmt.Println("-- CalledServiceURL set to: ", viper.GetString("calledServiceURL"))
 
-		params := mux.Vars(r)
+	fmt.Println("=============================================")
 
-		url := calledServiceURL + "/factorialRecursive/" + params["number"]
-
-		req, reqErr := http.NewRequest("GET", url, nil)
-		if reqErr != nil {
-			log.Fatal("Error en response: ", reqErr)
-			fmt.Fprintf(w, "Error en response: %s", reqErr)
-			return
-		}
-
-		req.Header.Set("Connection", "close")
-		//req.Header.Set("Connection", "Keep-Alive")
-
-		resp, errResp := netClient.Do(req)
-		if errResp != nil {
-			log.Fatal(errResp)
-			fmt.Fprintf(w, "%s", errResp)
-			return
-		}
-
-		respData, errData := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		if errData != nil {
-			log.Fatal(errData)
-			fmt.Fprintf(w, "Error en respData: %s", errData)
-			return
-		}
-
-		fmt.Fprintf(w, "%s", respData)
-
-	}
 }
 
 // Main function
 func main() {
 
-	log.Println("Starting server")
+	start()
 
-	// Start to read conf file
-	log.Println("\n\n")
-	log.Println("=============================================")
-	log.Println("      Configuration checking - bank v0.8")
-	log.Println("=============================================")
+	// CPU profiling by default
+	//defer profile.Start().Stop()
+	// Memory profiling
+	//defer profile.Start(profile.MemProfile).Stop()
 
-	// loading configuration
-	viper.SetConfigName("conf")                                   // name of config file (without ext)
-	viper.AddConfigPath(".")                                      // default path for conf file
-	viper.SetDefault("port", ":9296")                             // default port value
-	viper.SetDefault("calledServiceURL", "http://localhost:9596") // default calledServiceURL
-	err := viper.ReadInConfig()                                   // Find and read the config file
-	if err != nil {                                               // Handle errors reading the config file
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	// pass bound struct method to fasthttp
+	myHandler := &MyHandler{
+		calledServiceURL: viper.GetString("calledServiceURL"),
+		client: SetClient(),
 	}
 
-	log.Println("-- Using port: ", viper.GetString("port"))
-	log.Println("-- CalledServiceURL set to: ", viper.GetString("calledServiceURL"))
 
-	log.Println("=============================================")
+	// Use fasthttprouter mux
+	router := fasthttprouter.New()
+	router.GET("/", Index)
+	router.GET("/echo/:message", myHandler.echoHandlerHystrix)
+	router.GET("/factorialIterative/:number", myHandler.factorialIterativeHandler)
+	router.GET("/factorialRecursive/:number", myHandler.factorialRecursiveHandler)
 
-	// Define just one transport for all calls
-	tr := &http.Transport{
-		MaxIdleConns:        10000, // iddle conn pool size
-		MaxIdleConnsPerHost: 10000, // iddle conn pool size per host
-		DisableKeepAlives:   true,  // disable keep alive
-	}
 
-	netClient := &http.Client{Transport: tr}
-
-	router := mux.NewRouter()
-
-	router.HandleFunc("/", Index).Methods("GET")
-	router.HandleFunc("/echo/{message}", echoHandler(viper.GetString("calledServiceURL"),
-		netClient)).Methods("GET")
-	router.HandleFunc("/factorialIterative/{number}",
-		factorialIterativeHandler(viper.GetString("calledServiceURL"), netClient)).Methods("GET")
-	router.HandleFunc("/factorialRecursive/{number}",
-		factorialRecursiveHandler(viper.GetString("calledServiceURL"), netClient)).Methods("GET")
-
-	// set timeout
-	//muxWithMiddlewares := http.TimeoutHandler(router, time.Second*3, "Timeout!")
-
-	srv := &http.Server{
-		Addr: viper.GetString("port"),
+	// Defining server
+	srv := &fasthttp.Server{
 		// https://stackoverflow.com/questions/29334407/creating-an-idle-timeout-in-go
-		//WriteTimeout: time.Second * 60,
-		ReadTimeout: time.Second * 15,
-		//IdleTimeout:  time.Second * 120,
-		//Handler: router, // Pass our instance of gorilla/mux in.
-		Handler: router,
+		//WriteTimeout: 					time.Second * 60,
+		ReadTimeout: 						time.Second * 20,
+		//IdleTimeout:  					time.Second * 120,
+		SleepWhenConcurrencyLimitsExceeded: time.Second * 5,
+		Handler:                            router.Handler,
 	}
 
-	// Run our server in a goroutine so that it doesn't block.
+	// Lanuch server in a thread
 	go func() {
-		log.Println("Running server....")
-
-		if err := srv.ListenAndServe(); err != nil {
-			log.Println(err)
+		fmt.Println("Starting server...")
+		log.Info().Msg("Starting server...")
+		if err := srv.ListenAndServe(viper.GetString("port")); err != nil {
+			log.Panic().Msgf("%s", err)
 		}
 	}()
 
+	// Process a graceful shutdown
 	c := make(chan os.Signal, 1)
-	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
-	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
 	signal.Notify(c, os.Interrupt)
 
 	// Block until we receive our signal.
 	<-c
 
-	// Create a deadline to wait for.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	// Doesn't block if no connections, but will otherwise wait
-	// until the timeout deadline.
-	srv.Shutdown(ctx)
+	errShutdown := srv.Shutdown()
+	if errShutdown != nil {
+		panic(fmt.Sprintf("Error shutting down %s", errShutdown))
+	}
+
 	// Optionally, you could run srv.Shutdown in a goroutine and block on
 	// <-ctx.Done() if your application should wait for other services
 	// to finalize based on context cancellation.
-	fmt.Println("\n\n")
-	log.Println("shutting down")
-	log.Println("Goddbye!....")
+	fmt.Print("\n\n")
+	fmt.Println("shutting down")
+	fmt.Println("Goddbye!....")
 	os.Exit(0)
 
 }
