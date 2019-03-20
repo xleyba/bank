@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func setClient() *hystrix.Client {
+func SetClient() *hystrix.Client {
 
 	// First set a backoff mechanism. Constant backoff increases the backoff at a constant rate
 	backoffInterval := 5 * time.Millisecond
