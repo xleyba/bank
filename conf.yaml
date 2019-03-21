@@ -5,6 +5,6 @@ calledServiceURL: "http://localhost:9596"
 # string to define log level. Values: "info", "debug", "disabled". Info is default value
 loglevel: "info"
 # Client max concurrent connections to connect to calledServiceURL. Default is 510
-MaxIdleConns = 510
+MaxIdleConns: 510
 # Client max concurrent connections to connect to calledServiceURL, per caller host. Default is 510
-MaxIdleConnsPerHost = 510
+MaxIdleConnsPerHost: 510
