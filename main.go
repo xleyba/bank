@@ -35,6 +35,9 @@ func start() {
 	viper.SetDefault("port", ":9296")    // default port value
 	viper.SetDefault("calledServiceURL", "http://localhost:9596") // default calledServiceURL
 	viper.SetDefault("loglevel", "info") // default port value
+	viper.SetDefault("MaxIdleConns", 510) // default port value
+	viper.SetDefault("MaxIdleConnsPerHost", 510) // default port value
+
 	err := viper.ReadInConfig()          // Find and read the config file
 	if err != nil {                      // Handle errors reading the config file
 		fmt.Printf("Fatal error config file: %v \n", err)
@@ -60,6 +63,8 @@ func start() {
 
 	fmt.Println("-- Log lever set to:        ", viper.GetString("loglevel"))
 	fmt.Println("-- CalledServiceURL set to: ", viper.GetString("calledServiceURL"))
+	fmt.Println("-- MaxIdleConns:            ", viper.GetString("MaxIdleConns"))
+	fmt.Println("-- MaxIdleConnsPerHost:     ", viper.GetString("MaxIdleConnsPerHost"))
 
 	fmt.Println("=============================================")
 
