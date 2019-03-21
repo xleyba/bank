@@ -5,7 +5,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 	"io/ioutil"
-	"net/http"
 	"strconv"
 )
 
@@ -14,17 +13,14 @@ func Index(ctx *fasthttp.RequestCtx) {
 	fmt.Fprint(ctx, "Hello")
 }
 
-// Handle echo with Hystrix
+// Handle echo
 func (h *MyHandler) echoHandlerHystrix(ctx *fasthttp.RequestCtx) {
 
 	url := h.calledServiceURL + "/echo/" + fmt.Sprintf("%s", ctx.UserValue("message"))
 	log.Debug().Msgf("URL to call: %s", url)
 
-	headers := http.Header{}
-	//headers.Set("Content-Type", "application/json")
-	headers.Set("Connection", "close")
 
-	response, errResp := h.client.Get(url, headers)
+	response, errResp := h.client.Get(url)
 	if errResp != nil {
 		log.Error().Msgf("Error en response: %s", errResp.Error())
 		ctx.Error(errResp.Error(), fasthttp.StatusInternalServerError)
@@ -51,11 +47,7 @@ func (h *MyHandler) factorialIterativeHandler(ctx *fasthttp.RequestCtx) {
 	url := h.calledServiceURL + "/factorialIterative/" + fmt.Sprintf("%s", ctx.UserValue("number"))
 	log.Debug().Msgf("URL to call: %s", url)
 
-	headers := http.Header{}
-	//headers.Set("Content-Type", "application/json")
-	headers.Set("Connection", "close")
-
-	response, errResp := h.client.Get(url, headers)
+	response, errResp := h.client.Get(url)
 	if errResp != nil {
 		log.Error().Msgf("Error en response: %s", errResp.Error())
 		ctx.Error(errResp.Error(), fasthttp.StatusInternalServerError)
@@ -81,14 +73,9 @@ func (h *MyHandler) factorialIterativeHandler(ctx *fasthttp.RequestCtx) {
 // Handle recursive path and calls recursive calculation service
 func (h *MyHandler) factorialRecursiveHandler(ctx *fasthttp.RequestCtx) {
 
-
 	url := h.calledServiceURL + "/factorialIterative/" + fmt.Sprintf("%s", ctx.UserValue("number"))
 
-	headers := http.Header{}
-	//headers.Set("Content-Type", "application/json")
-	headers.Set("Connection", "close")
-
-	response, errResp := h.client.Get(url, headers)
+	response, errResp := h.client.Get(url)
 	if errResp != nil {
 		log.Error().Msgf("Error en response: %s", errResp.Error())
 		ctx.Error(errResp.Error(), fasthttp.StatusInternalServerError)

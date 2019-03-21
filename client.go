@@ -1,34 +1,23 @@
 package main
 
 import (
-	"github.com/gojektech/heimdall"
-	"github.com/gojektech/heimdall/hystrix"
-	"time"
+	"fmt"
+	"net/http"
 )
 
-func SetClient() *hystrix.Client {
+func SetClient() *http.Client {
 
-	// First set a backoff mechanism. Constant backoff increases the backoff at a constant rate
-	backoffInterval := 5 * time.Millisecond
-	// Define a maximum jitter interval. It must be more than 1*time.Millisecond
-	maximumJitterInterval := 15 * time.Millisecond
+	defaultRoundTripper := http.DefaultTransport
+	defaultTransportPointer, ok := defaultRoundTripper.(*http.Transport)
+	if !ok {
+		panic(fmt.Sprintf("defaultRoundTripper not an *http.Transport"))
+	}
+	defaultTransport := *defaultTransportPointer // dereference it to get a copy of the struct that the pointer points to
+	defaultTransport.MaxIdleConns = 510
+	defaultTransport.MaxIdleConnsPerHost = 510
 
-	backoff := heimdall.NewConstantBackoff(backoffInterval, maximumJitterInterval)
+	myClient := &http.Client{Transport: &defaultTransport}
 
-	// Create a new retry mechanism with the backoff
-	retrier := heimdall.NewRetrier(backoff)
-
-	client := hystrix.NewClient(
-		hystrix.WithHTTPTimeout(120*time.Second),
-		hystrix.WithHystrixTimeout(time.Second*120),
-		hystrix.WithMaxConcurrentRequests(600),
-		hystrix.WithErrorPercentThreshold(30),
-		hystrix.WithSleepWindow(10),
-		hystrix.WithRetrier(retrier),
-		hystrix.WithRetryCount(4),
-		hystrix.WithCommandName("MyClient"),
-	)
-
-	return client
+	return myClient
 
 }

@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/buaazp/fasthttprouter"
-	"github.com/gojektech/heimdall/hystrix"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/valyala/fasthttp"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -15,7 +15,7 @@ import (
 
 type MyHandler struct {
 	calledServiceURL string
-	client *hystrix.Client
+	client *http.Client
 }
 
 // Display start messages
