@@ -18,6 +18,7 @@ func Index(ctx *fasthttp.RequestCtx) {
 func (h *MyHandler) echoHandlerHystrix(ctx *fasthttp.RequestCtx) {
 
 	url := h.calledServiceURL + "/echo/" + fmt.Sprintf("%s", ctx.UserValue("message"))
+	log.Debug().Msgf("URL to call: %s", url)
 
 	headers := http.Header{}
 	//headers.Set("Content-Type", "application/json")
@@ -39,6 +40,7 @@ func (h *MyHandler) echoHandlerHystrix(ctx *fasthttp.RequestCtx) {
 		log.Error().Msgf("failed to read response body %s", errData.Error())
 	}
 
+	ctx.Response.SetStatusCode(fasthttp.StatusOK)
 	fmt.Fprintf(ctx, "%s", respBody)
 }
 
@@ -46,7 +48,8 @@ func (h *MyHandler) echoHandlerHystrix(ctx *fasthttp.RequestCtx) {
 // Handle iterative path and calls iterative calculation service
 func (h *MyHandler) factorialIterativeHandler(ctx *fasthttp.RequestCtx) {
 
-	url := h.calledServiceURL + "/factorialIterative/" + fmt.Sprintf("%s", ctx.UserValue("message"))
+	url := h.calledServiceURL + "/factorialIterative/" + fmt.Sprintf("%s", ctx.UserValue("number"))
+	log.Debug().Msgf("URL to call: %s", url)
 
 	headers := http.Header{}
 	//headers.Set("Content-Type", "application/json")
@@ -68,6 +71,8 @@ func (h *MyHandler) factorialIterativeHandler(ctx *fasthttp.RequestCtx) {
 	if errData != nil {
 		log.Error().Msgf("failed to read response body %s", errData.Error())
 	}
+
+	ctx.Response.SetStatusCode(fasthttp.StatusOK)
 
 	fmt.Fprintf(ctx, "%s", respBody)
 
@@ -77,7 +82,7 @@ func (h *MyHandler) factorialIterativeHandler(ctx *fasthttp.RequestCtx) {
 func (h *MyHandler) factorialRecursiveHandler(ctx *fasthttp.RequestCtx) {
 
 
-	url := h.calledServiceURL + "/factorialIterative/" + fmt.Sprintf("%s", ctx.UserValue("message"))
+	url := h.calledServiceURL + "/factorialIterative/" + fmt.Sprintf("%s", ctx.UserValue("number"))
 
 	headers := http.Header{}
 	//headers.Set("Content-Type", "application/json")
@@ -100,6 +105,7 @@ func (h *MyHandler) factorialRecursiveHandler(ctx *fasthttp.RequestCtx) {
 		log.Error().Msgf("failed to read response body %s", errData.Error())
 	}
 
+	ctx.Response.SetStatusCode(fasthttp.StatusOK)
 	fmt.Fprintf(ctx, "%s", respBody)
 
 }

@@ -116,6 +116,8 @@ func main() {
 	// Block until we receive our signal.
 	<-c
 
+
+
 	errShutdown := srv.Shutdown()
 	if errShutdown != nil {
 		panic(fmt.Sprintf("Error shutting down %s", errShutdown))
